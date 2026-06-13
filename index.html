@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Unicorn Pocket</title>
+
+  <!-- Content-Security-Policy (P2, v25): the load-bearing directive is script-src 'self'
+       — the app has ZERO inline <script> (only the 3 external src tags at the bottom),
+       so this blocks any injected-script execution, which is the real mitigation for
+       BYO-key exfil (the key lives in localStorage). connect-src is intentionally broad
+       (https:) because the app legitimately fetches USER-SUPPLIED endpoints: the custom
+       Worker proxy (any *.workers.dev) and pack URLs via loadPackFromUrl (any https) —
+       a stricter allowlist would break those real features. style-src allows 'unsafe-inline'
+       because index.html carries a few inline style="" attributes. GitHub Pages can't set
+       HTTP headers, so a meta http-equiv is the only available control. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+
+  <!-- iOS PWA / installability -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Unicorn" />
+  <meta name="theme-color" content="#0b0b12" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">🦄</span> Unicorn Pocket</div>
+    <div class="topbar-actions">
+      <button id="navHistory" class="icon-btn" aria-label="History" title="History">🕘</button>
+      <button id="navSettings" class="icon-btn" aria-label="Settings" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- First-run modal (v17): shown when no voice pack is configured. Replaces
+       the old "open Settings immediately" first-run behaviour with a small
+       starter/build/skip choice so testers know which tap unblocks them. -->
+  <div id="firstRunModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="firstRunTitle">
+    <div class="modal-card">
+      <h2 id="firstRunTitle" class="modal-title">Welcome to Pocket</h2>
+      <p class="modal-subtitle">New here? <a href="docs/guide.html?doc=setup" target="_blank" rel="noopener">Open the 3-minute setup guide</a>. Or pick a voice to start:</p>
+      <button id="modalUseStarterBtn" class="primary-btn" type="button">Use starter voice (anonymous, 2 sec)</button>
+      <button id="modalBuildBtn" class="secondary-btn full" type="button">Build my own (opens guide)</button>
+      <button id="modalSkipBtn" class="ghost-btn" type="button">Skip — open Settings to paste a pack</button>
+      <p class="modal-footnote">You can change this anytime in Settings.</p>
+    </div>
+  </div>
+
+  <!-- P5: Add-to-Home-Screen hint (v24). Shown once when the app is NOT already
+       running in standalone mode (i.e. not installed). Dismissed to localStorage;
+       never nags. iOS Safari ignores manifest icons — the apple-touch-icon meta
+       above is what gets stamped on the home screen; this hint explains the steps. -->
+  <div id="a2hsBanner" class="a2hs-banner hidden" role="banner" aria-live="polite">
+    <div class="a2hs-content">
+      <span class="a2hs-icon" aria-hidden="true">📲</span>
+      <span class="a2hs-text">
+        <strong>Add to Home Screen</strong> for the best experience —
+        tap <strong>Share</strong> <span class="a2hs-share-icon" aria-label="share icon">⬆</span>
+        then <strong>Add to Home Screen</strong>.
+      </span>
+    </div>
+    <button id="a2hsClose" class="a2hs-close" type="button" aria-label="Dismiss">✕</button>
+  </div>
+
+  <main>
+    <!-- ===================== MAIN SCREEN ===================== -->
+    <section id="screenMain" class="screen">
+      <div id="setupBanner" class="banner hidden">
+        Finish setup first — tap to add your API key and voice pack.
+      </div>
+
+      <div class="card">
+        <label class="field-label">Screenshot(s)</label>
+        <label for="fileInput" class="filedrop" id="fileDrop">
+          <span class="filedrop-emoji">📸</span>
+          <span class="filedrop-text">Tap to add screenshots from your camera roll</span>
+        </label>
+        <input id="fileInput" type="file" accept="image/*" multiple hidden />
+        <button id="pasteBtn" class="secondary-btn full" type="button">📋 Paste screenshot</button>
+        <div class="hint">Copy a screenshot, then paste — no need to save it to your camera roll. Adds to the ones already here (up to 6).</div>
+        <div id="thumbs" class="thumbs"></div>
+      </div>
+
+      <div class="card">
+        <label class="field-label">Voice mode</label>
+        <!-- v34: each mode carries a one-line descriptor so a new tester knows what
+             it does without guessing. data-mode keys are UNCHANGED (TOURIST/KINK/
+             LONG/GO) — purely a label clarification, no composition change. -->
+        <div id="modePicker" class="mode-grid">
+          <button class="mode-btn" data-mode="TOURIST" type="button"><span class="mode-emoji">✈️</span><span class="mode-text"><span class="mode-name">Tourist</span><span class="mode-desc">visiting town</span></span></button>
+          <button class="mode-btn" data-mode="KINK" type="button"><span class="mode-emoji">🔥</span><span class="mode-text"><span class="mode-name">Kink</span><span class="mode-desc">flirty, suggestive</span></span></button>
+          <button class="mode-btn" data-mode="LONG" type="button"><span class="mode-emoji">❤️</span><span class="mode-text"><span class="mode-name">Long</span><span class="mode-desc">slow burn</span></span></button>
+          <button class="mode-btn" data-mode="GO" type="button"><span class="mode-emoji">⚡️</span><span class="mode-text"><span class="mode-name">Go</span><span class="mode-desc">let's meet up</span></span></button>
+        </div>
+        <div class="hint">No mode = your everyday voice. Tap one to shift the tone; the tags below stack on top.</div>
+
+        <div class="tag-row">
+          <button class="tag-btn" data-tag="#10" type="button">#10 Full-send tonight</button>
+          <button class="tag-btn" data-tag="#re" type="button">#re Re-engage</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="field-label" for="notes">Notes (optional)</label>
+        <textarea id="notes" class="text-input notes-input" rows="2"
+                  placeholder="Steer the reply, e.g. respond to her opening line, keep it short, suggest meeting up" spellcheck="false"></textarea>
+        <div class="hint">Typed here, it's sent as an instruction alongside the screenshot.</div>
+      </div>
+
+      <button id="generateBtn" class="primary-btn" type="button">Generate replies</button>
+      <!-- v39: "Read the room" secondary action — strategic coach read of the screenshot.
+           Separate API call with its own prompt; does NOT use the voice pack.
+           Wired in init() (CSP: all JS external). -->
+      <button id="readRoomBtn" class="secondary-btn full" type="button">🔍 Read the room</button>
+      <button id="startOverBtn" class="ghost-btn hidden" type="button">Start over</button>
+
+      <!-- v39: read card — holds the coach's strategic read. Placed above #results
+           so it sits between the controls and any generated replies. Hidden until
+           readTheRoom() fires; cleared by resetForNextProfile(). -->
+      <div id="readCard" class="read-card hidden"></div>
+
+      <div id="status" class="status hidden"></div>
+      <!-- v20: shown when results come from a reopened History entry, cleared on fresh generate -->
+      <div id="historyBadge" class="history-badge hidden"></div>
+      <div id="results" class="results"></div>
+
+      <!-- v32: refine bar — iterate on the 3 options in one tap instead of
+           restarting the whole flow. Shown by renderResults() whenever options
+           are on screen (fresh OR reopened-from-history), hidden when a new
+           generation starts and by Start over. Each chip re-runs generation
+           with a tone nudge appended to the USER-TURN instruction (the same
+           steering channel as the Notes field) — voice-core.js (the eval-
+           certified prompt engine) is NOT touched, so the certified system
+           prompt is unchanged. Wired in init() (CSP: all JS external). -->
+      <div id="refineBar" class="refine-bar hidden">
+        <div id="refineLabel" class="refine-label">Not quite? Tap to refine:</div>
+        <div class="refine-chips">
+          <button class="refine-chip" data-refine="shorter" type="button">Shorter</button>
+          <button class="refine-chip" data-refine="bolder" type="button">Bolder</button>
+          <button class="refine-chip" data-refine="funnier" type="button">Funnier</button>
+          <button class="refine-chip" data-refine="curious" type="button">More curious</button>
+          <button class="refine-chip" data-refine="move" type="button">Make a move</button>
+        </div>
+        <button id="regenBtn" class="secondary-btn full" type="button">🔄 New options</button>
+      </div>
+    </section>
+
+    <!-- ===================== SETTINGS SCREEN ===================== -->
+    <section id="screenSettings" class="screen hidden">
+      <!-- v26: Guided setup card — shown only while setup is incomplete (no key or
+           no pack). Walks the user through key → model → test in order so a new
+           tester never stares at a blank Settings screen wondering what to do. -->
+      <div id="guidedSetup" class="card guided-setup hidden">
+        <div class="field-label">Finish setup — 3 quick steps</div>
+        <ol class="guided-steps">
+          <li><strong>Paste your Claude API key</strong> below. Get one at
+            <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>
+            → API Keys → Create Key (new accounts get free credit).</li>
+          <li><strong>Pick a model</strong> — the default (Claude Sonnet 4.6) is recommended; leave it as is.</li>
+          <li><strong>Tap "Test connection"</strong> to confirm your key works before you start.</li>
+        </ol>
+        <div class="hint">New here? See the <a href="docs/guide.html?doc=quickstart" target="_blank" rel="noopener">5-minute quick start</a>.</div>
+      </div>
+
+      <div class="card">
+        <label class="field-label" for="apiKey">Anthropic API key</label>
+        <input id="apiKey" class="text-input" type="password" autocomplete="off"
+               placeholder="sk-ant-..." spellcheck="false" />
+        <div class="hint">Stored only on this device (localStorage). Sent directly to Anthropic.</div>
+      </div>
+
+      <div class="card">
+        <label class="field-label" for="modelSelect">Model</label>
+        <select id="modelSelect" class="text-input select-input">
+          <optgroup label="Claude — calls Anthropic directly (no proxy)">
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — recommended</option>
+            <option value="claude-opus-4-8">Claude Opus 4.8 — most capable (pricier)</option>
+          </optgroup>
+          <optgroup label="GPT — routes through the proxy below">
+            <option value="gpt-4o">GPT-4o — recommended</option>
+            <option value="gpt-4o-mini">GPT-4o mini — cheaper</option>
+          </optgroup>
+          <option value="__custom__">Other (type a model id)…</option>
+        </select>
+        <input id="model" class="text-input hidden" type="text" autocomplete="off"
+               placeholder="e.g. claude-haiku-4-5-20251001, o4-mini, gpt-5" spellcheck="false" style="margin-top:8px;" />
+        <div class="hint">Claude models call Anthropic directly. GPT models route through the proxy below (needs your OpenAI key + Proxy URL). Pick "Other" to type any model id.</div>
+        <button id="testConnBtn" class="secondary-btn full" type="button">Test connection</button>
+        <div id="testConnStatus" class="pack-status" aria-live="polite"></div>
+      </div>
+
+      <div class="card">
+        <label class="field-label">OpenAI (optional)</label>
+        <div class="hint" style="margin:0 0 10px;">GPT models can't be called directly from a browser, so they route through a tiny proxy you deploy once. See worker/README.md to deploy it (free).</div>
+        <label class="sub-label" for="openaiKey">OpenAI API key</label>
+        <input id="openaiKey" class="text-input" type="password" autocomplete="off"
+               placeholder="sk-..." spellcheck="false" />
+        <label class="sub-label" for="proxyUrl">Proxy URL</label>
+        <input id="proxyUrl" class="text-input" type="url" autocomplete="off"
+               placeholder="https://unicorn-pocket-proxy.NAME.workers.dev" spellcheck="false" />
+        <button id="useSharedProxyBtn" class="ghost-btn" type="button">Use the shared circle proxy</button>
+        <div class="hint">Routes GPT through the circle's shared Cloudflare Worker, still on your own OpenAI key. Nothing is stored. Opt-in only — tap to fill the URL above.</div>
+      </div>
+
+      <div class="card">
+        <label class="field-label">Voice pack</label>
+        <div id="packStatus" class="pack-status">No voice pack loaded.</div>
+
+        <button id="useStarterBtn" class="secondary-btn full" type="button">Use starter voice (anonymous, one tap)</button>
+        <div class="hint">Or build your own — paste your sent messages and let the app derive a pack on your own API key. <a href="docs/guide.html?doc=voice-pack-from-your-messages" target="_blank" rel="noopener">How to extract messages</a> (30-60 min).</div>
+
+        <!-- v27: in-app build-your-own-voice (P3 chunk 1) -->
+        <button id="buildToggleBtn" class="secondary-btn full" type="button">🛠 Build my voice from my messages</button>
+        <div id="buildPanel" class="hidden">
+          <div class="hint" style="margin: 10px 0 6px;">Paste a few hundred of your own sent messages below, then tap Build. The app makes <strong>one API call</strong> on your own key (~$0.10) to derive a voice description. <strong>Your messages are never stored</strong> — only the resulting voice description is saved. <a href="docs/guide.html?doc=voice-pack-from-your-messages" target="_blank" rel="noopener">How to extract messages</a></div>
+          <textarea id="buildCorpus" class="text-input textarea" rows="8"
+                    placeholder="Paste your sent messages here…" spellcheck="false"></textarea>
+          <button id="buildVoiceBtn" class="primary-btn" type="button">Build my voice</button>
+          <div id="buildStatus" class="pack-status" aria-live="polite"></div>
+          <div id="buildPreview" class="hidden">
+            <div id="buildPreviewSummary" class="pack-status" style="margin: 8px 0;"></div>
+            <button id="buildInstallBtn" class="primary-btn" type="button">Use this voice</button>
+            <button id="buildDiscardBtn" class="ghost-btn" type="button">Discard</button>
+          </div>
+        </div>
+
+        <!-- v40: Tune my voice — one-API-call voice correction loop (C3). -->
+        <label class="sub-label">Tune my voice</label>
+        <div class="hint" style="margin: 4px 0 6px;">Replies a little off? Tell me what to fix, e.g. "too formal", "I'd never say buddy", "more playful". One API call on your own key updates your installed voice.</div>
+        <textarea id="tuneGripe" class="text-input" rows="2" placeholder="What's off about your replies?" spellcheck="false"></textarea>
+        <button id="tuneVoiceBtn" class="secondary-btn full" type="button">🎚 Tune my voice</button>
+        <div id="tuneStatus" class="pack-status" aria-live="polite"></div>
+        <div id="tunePreview" class="hidden">
+          <div id="tunePreviewText" class="pack-status" style="margin: 6px 0;"></div>
+          <button id="tuneApplyBtn" class="primary-btn" type="button">Apply</button>
+          <button id="tuneCancelBtn" class="ghost-btn" type="button">Cancel</button>
+        </div>
+
+        <!-- v43: voice preview (C9) — hear your voice before going live.
+             Uses the SAME voice mode selected on Main + the installed pack.
+             Generates sample openers against a fixed demo profile (text-only).
+             NOT for sending — just a confidence check. Wired in init() (CSP: JS external). -->
+        <button id="previewVoiceBtn" class="secondary-btn full" type="button">▶️ Preview my voice</button>
+        <div id="previewStatus" class="pack-status" aria-live="polite"></div>
+        <div id="previewCard" class="preview-card hidden"></div>
+
+        <label class="sub-label" for="packUrl">Load from URL</label>
+        <div class="row">
+          <input id="packUrl" class="text-input" type="url" autocomplete="off"
+                 placeholder="https://.../unicorn_voice_pack.json" spellcheck="false" />
+          <button id="loadUrlBtn" class="secondary-btn" type="button">Fetch</button>
+        </div>
+
+        <label class="sub-label" for="packFile">…or load a .json file (AirDrop it to your phone first)</label>
+        <input id="packFile" class="text-input" type="file" accept=".json,application/json" />
+
+        <label class="sub-label" for="packText">…or paste voice-pack JSON</label>
+        <textarea id="packText" class="text-input textarea" rows="6"
+                  placeholder='{"base_voice":"...","modes":{...},"manual_analyze":"..."}' spellcheck="false"></textarea>
+        <button id="savePackBtn" class="secondary-btn full" type="button">Save pasted pack</button>
+      </div>
+
+      <!-- P4 (v29): Anonymous usage-events consent toggle. Default OFF — the toggle
+           MUST be unchecked on first load. Separate from the GPT shared-proxy opt-in
+           (different purpose, different localStorage key: unicorn.eventsConsent).
+           Consent copy is verbatim from outputs/p4-events-schema-consent.md §3. -->
+      <div class="card">
+        <label class="field-label">Privacy &amp; usage stats</label>
+        <label class="consent-row" for="eventsConsentToggle">
+          <input id="eventsConsentToggle" type="checkbox" class="consent-checkbox" />
+          <span class="consent-label">Help improve Unicorn — share anonymous usage stats</span>
+        </label>
+        <p class="hint consent-copy">
+          <strong>Share anonymous usage stats?</strong> Off by default. If you turn this on,
+          Unicorn sends a tiny anonymous record each time you generate replies — which voice
+          + model you used, how many options came back, which one you copied, how long it
+          took, and the app version. <strong>It never sends your screenshots, the
+          conversation, the reply text, or your API key</strong> — only counts and timings.
+          It helps the user see what's working for the circle. Turn it off any time to stop.
+        </p>
+      </div>
+
+      <!-- v33: invite-a-friend. Circle growth is invite-only (the user/friends hand
+           the link out); this turns that manual chore into a one-tap Web Share
+           (with a clipboard-copy fallback). Shares the app's OWN origin URL — the
+           bare root lands a new friend in the first-run setup-guide flow. No
+           personal data; nothing stored. Wired in init() (CSP: JS external). -->
+      <div class="card">
+        <label class="field-label">Invite a friend</label>
+        <div class="hint" style="margin:0 0 10px;">Share Pocket with someone in your circle. They get the link, which opens the 3-minute setup guide.</div>
+        <button id="inviteFriendBtn" class="secondary-btn full" type="button">📨 Share invite link</button>
+        <div id="inviteStatus" class="pack-status" aria-live="polite"></div>
+      </div>
+
+      <button id="saveSettingsBtn" class="primary-btn" type="button">Save &amp; done</button>
+      <button id="backBtn" class="ghost-btn" type="button">Back</button>
+
+      <!-- Version label — set from APP_VERSION by app.js. Gives testers a version
+           to report ("I'm on v28, X is broken") and makes the setup-guide footer
+           reference ("current version shown in-app") real. -->
+      <div id="appVersionLabel" class="version-label"></div>
+    </section>
+
+    <!-- ===================== HISTORY SCREEN ===================== -->
+    <section id="screenHistory" class="screen hidden">
+      <div class="card">
+        <label class="field-label">Recent generations</label>
+        <div class="hint">Stored only on this device. Tap one to reopen its screenshots and replies, then add a screenshot or regenerate.</div>
+      </div>
+      <!-- T3: dismissible tip card. Shown until the user taps ×; dismissed state
+           persisted to localStorage (key unicorn_history_tip_dismissed). Consent-
+           clear: content only leaves the device on explicit Export — this tip does
+           NOT change the export payload or privacy contract. Rendered by renderHistory()
+           in app.js. -->
+      <div id="historyTip" class="history-tip-card hidden">
+        <span class="history-tip-text">Tip: after a few replies, tap Export and send the file to whoever set up your voice — it helps tune your replies.</span>
+        <button id="historyTipClose" class="history-tip-close" type="button" aria-label="Dismiss tip">×</button>
+      </div>
+      <!-- v41: outcome filter chips. Populated by app.js; click handlers wired in
+           init() (CSP: all JS external). "All" is the default active state. -->
+      <div id="historyFilters" class="history-filters">
+        <button class="history-filter-chip active" data-filter="all" type="button">All</button>
+        <button class="history-filter-chip" data-filter="replied" type="button">💚 Replied</button>
+        <button class="history-filter-chip" data-filter="no_reply" type="button">🚫 No reply</button>
+        <button class="history-filter-chip" data-filter="ghosted" type="button">👻 Ghosted</button>
+      </div>
+      <div id="historyList" class="history-list"></div>
+      <!-- T3: Export promoted to primary. Visible only when there are entries. -->
+      <button id="historyExportBtn" class="primary-btn hidden" type="button">Export history (JSON)</button>
+      <button id="historyBackBtn" class="secondary-btn full" type="button">Back</button>
+      <button id="historyClearBtn" class="ghost-btn" type="button">Clear all history</button>
+    </section>
+  </main>
+
+  <!-- voice-core.js MUST load before app.js: app.js delegates prompt composition
+       (buildSystemPrompt + HARD_RULES, parseOptions, sanitizeReply) to window.VoiceCore.
+       This is the SAME module the eval harness grades, so the app sends the exact
+       prompt the eval certifies (no HARD_RULES drift). -->
+  <script src="voice-core.js"></script>
+  <script src="voicebuild.js"></script>
+  <script src="history.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

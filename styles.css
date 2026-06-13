@@ -1,0 +1,756 @@
+:root {
+  --bg: #0b0b12;
+  --surface: #16161f;
+  --surface-2: #1f1f2b;
+  --border: #2b2b3a;
+  --text: #f2f2f7;
+  --muted: #9a9ab0;
+  --accent: #b388ff;
+  --accent-2: #7c4dff;
+  --ok: #4ade80;
+  --err: #ff6b6b;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  background: rgba(11, 11, 18, 0.85);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand { font-weight: 700; font-size: 19px; letter-spacing: 0.2px; }
+.brand-mark { font-size: 22px; }
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text);
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.topbar-actions { display: flex; align-items: center; gap: 2px; }
+
+main { padding: 16px; max-width: 640px; margin: 0 auto; }
+
+.screen { display: flex; flex-direction: column; gap: 16px; }
+.hidden { display: none !important; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.field-label { display: block; font-weight: 600; margin-bottom: 10px; font-size: 15px; }
+.sub-label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+.hint { color: var(--muted); font-size: 13px; margin-top: 8px; }
+
+/* ---------- file drop ---------- */
+.filedrop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 28px 16px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  cursor: pointer;
+  text-align: center;
+}
+.filedrop-emoji { font-size: 34px; }
+.filedrop-text { color: var(--muted); font-size: 15px; }
+
+.thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.thumb {
+  position: relative;
+  width: 72px; height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb .rm {
+  position: absolute; top: 2px; right: 2px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  font-size: 14px;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ---------- mode grid ---------- */
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 56px;
+}
+.mode-btn.active {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(124,77,255,0.28), rgba(179,136,255,0.14));
+}
+.mode-emoji { font-size: 20px; }
+/* v34: two-line mode label (name + descriptor) so each mode self-explains. */
+.mode-text { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
+.mode-name { font-weight: 600; font-size: 16px; line-height: 1.15; }
+.mode-desc { font-weight: 500; font-size: 11px; color: var(--muted); line-height: 1.1; }
+.mode-btn.active .mode-desc { color: var(--text); }
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.tag-btn {
+  flex: 1 1 auto;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 48px;
+}
+.tag-btn.active { color: var(--text); border-color: var(--accent-2); background: rgba(124,77,255,0.22); }
+
+/* ---------- buttons ---------- */
+.primary-btn {
+  width: 100%;
+  padding: 18px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  min-height: 60px;
+}
+.primary-btn:disabled { opacity: 0.5; cursor: default; }
+
+.secondary-btn {
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 48px;
+}
+.secondary-btn.full { width: 100%; margin-top: 10px; }
+
+.ghost-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* "Start over" — low-emphasis reset under the Generate CTA. Reuses .ghost-btn
+   but gets a little breathing room + a hairline so it reads as a distinct,
+   tappable action rather than crowding the primary button. */
+#startOverBtn {
+  margin-top: 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  min-height: 48px;
+}
+
+/* ---------- inputs ---------- */
+.text-input {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  outline: none;
+}
+.text-input:focus { border-color: var(--accent); }
+/* v22: Model dropdown shares the .text-input box; keep the native arrow for
+   affordance (iOS renders its native picker wheel). */
+select.select-input { cursor: pointer; }
+.textarea { resize: vertical; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; }
+/* Notes field: force the system font + 16px to override the UA <textarea>
+   monospace default (the bare .text-input doesn't set font-family, so the UA
+   monospace wins otherwise). 16px also prevents iOS zoom-on-focus. NOT the
+   monospace .textarea used for JSON paste. */
+.notes-input { resize: vertical; min-height: 52px; font-family: inherit; font-size: 16px; }
+.row { display: flex; gap: 8px; align-items: stretch; }
+.row .text-input { flex: 1; }
+
+/* ---------- banner / status / pack ---------- */
+.banner {
+  background: rgba(124,77,255,0.18);
+  border: 1px solid var(--accent-2);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.status {
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.status.loading { color: var(--accent); }
+.status.error { color: var(--err); border-color: var(--err); white-space: pre-wrap; }
+
+.pack-status { font-size: 14px; color: var(--muted); }
+.pack-status.ok { color: var(--ok); }
+.pack-status.bad { color: var(--err); }
+
+/* P4 (v29): events-consent toggle row */
+.consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.consent-checkbox {
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.consent-label {
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.4;
+}
+.consent-copy {
+  margin-top: 4px;
+}
+
+/* v20: "from history" badge — shown above results when they come from a
+   reopened History entry. Muted + small so it doesn't compete with the
+   replies; cleared automatically when fresh generation runs. */
+.history-badge {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  padding: 6px 0 2px;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- guided setup card (v26) ---------- */
+/* Accent border/background distinguishes this orientation card from data-entry
+   cards. Uses --accent-2 at low opacity so it reads as guidance, not an error.
+   The card is shown only while setup is incomplete (refreshGuidedSetup). */
+.guided-setup {
+  border-color: var(--accent-2);
+  background: rgba(124,77,255,0.10);
+}
+.guided-steps {
+  margin: 10px 0 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.guided-steps li {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.45;
+}
+.guided-steps a { color: var(--accent); text-decoration: none; }
+.guided-steps a:hover { text-decoration: underline; }
+
+/* ---------- results ---------- */
+.results { display: flex; flex-direction: column; gap: 12px; }
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.result-text { font-size: 16px; line-height: 1.5; white-space: pre-wrap; }
+/* v32: inline-editable state for a result reply. Tapping Edit turns the text
+   into a contentEditable field; this gives it an accent outline + a panel
+   background so it's visibly editable, and a little inset padding for caret room. */
+.result-text.editing {
+  outline: 1.5px solid var(--accent);
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: -8px -10px 0;
+}
+.result-text.editing:focus { outline: 1.5px solid var(--accent); }
+
+/* v32: per-option actions row — Edit + Copy side by side under the reply. */
+.result-actions { display: flex; gap: 8px; margin-top: 12px; }
+.edit-btn {
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 48px;
+}
+.copy-btn {
+  flex: 1;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 48px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.copy-btn.copied { color: #0b0b12; background: var(--ok); border-color: var(--ok); }
+
+/* v32: refine bar — the iterate-in-one-tap surface under the results. Pill
+   chips reuse the .tag-btn aesthetic; the whole bar is shown by renderResults
+   and hidden when a generation starts / on Start over. */
+.refine-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.refine-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.refine-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.refine-chip {
+  flex: 1 1 auto;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.refine-chip:active { color: var(--text); border-color: var(--accent); }
+/* v36: the nudge that produced the current results — persistent highlight (distinct
+   from the momentary :active tap state). */
+.refine-chip.active { color: var(--text); border-color: var(--accent); background: rgba(124,77,255,0.22); }
+.refine-chip:disabled { opacity: 0.5; cursor: default; }
+#regenBtn { margin-top: 2px; }
+#regenBtn:disabled { opacity: 0.5; cursor: default; }
+
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(179,136,255,0.3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: -3px;
+  margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- history ---------- */
+.history-list { display: flex; flex-direction: column; gap: 10px; }
+.history-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  cursor: pointer;
+  width: 100%;
+}
+.history-item:active { border-color: var(--accent); }
+.history-thumbs { display: flex; gap: 4px; flex-shrink: 0; }
+.history-thumbs img {
+  width: 40px; height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: block;
+}
+.history-body { flex: 1; min-width: 0; }
+.history-snippet {
+  font-size: 14px;
+  color: var(--text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.history-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+/* v16: small "✓" inline marker on the option the user Copy'd (chosenIndex). */
+.history-chosen-mark { color: var(--ok); font-weight: 600; }
+/* v16: italic preview of the user's steering Note, dimmed under the meta. */
+.history-notes {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-del {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 16px; line-height: 1;
+  cursor: pointer; padding: 0;
+}
+.history-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 24px; }
+/* v21: device-local app-use summary line at the top of History. */
+.history-usage { color: var(--muted); font-size: 12px; padding: 4px 2px 12px; border-bottom: 1px solid var(--border, #2a2a3a); margin-bottom: 10px; }
+
+/* v41: outcome filter chip row — mirrors the refine-chip visual language for
+   consistency: pill shape, accent border on active, dark palette. Placed above
+   #historyList so chips are always in reach without scrolling. */
+.history-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 0 10px;
+}
+.history-filter-chip {
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 36px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.history-filter-chip.active {
+  color: var(--text);
+  border-color: var(--accent);
+  background: rgba(124, 77, 255, 0.22);
+}
+.history-filter-chip:active { color: var(--text); border-color: var(--accent); }
+
+/* v41: insight line — muted, slightly accented one-liner at the top of the list.
+   Only rendered when totalTagged >= 3 AND a best mode exists. */
+.history-insight {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 12px;
+  background: rgba(124, 77, 255, 0.08);
+  border: 1px solid rgba(124, 77, 255, 0.20);
+  border-radius: 10px;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+/* v37: outcome control row — three pill buttons (💚 Replied / 🚫 No reply / 👻 Ghosted)
+   that the user taps after they know if the reply landed. Compact enough to live inside
+   the history card without pushing it too tall; 44px tap-target floor per iOS HIG. */
+.history-outcome {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.outcome-btn {
+  flex: 1;
+  min-height: 36px;
+  padding: 0 4px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.outcome-btn.active {
+  border-color: var(--accent);
+  background: rgba(179, 136, 255, 0.15);
+  color: var(--text);
+}
+
+/* T3: History tip card — dismissible nudge to export. Low-weight surface
+   (inline with history flow, not a modal), accent border for salience, × in
+   the corner. Persisted dismiss via localStorage so it never nags. */
+.history-tip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(124, 77, 255, 0.10);
+  border: 1px solid rgba(124, 77, 255, 0.30);
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+}
+.history-tip-text { flex: 1; }
+.history-tip-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+/* Settings footer version label (set from APP_VERSION by app.js). */
+.version-label { color: var(--muted); font-size: 12px; text-align: center; margin-top: 14px; }
+
+/* v17: first-run modal overlay. High z-index, dims the app behind, content
+   centered. Compact so it fits without scroll on small phones. */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+.modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 18px 18px;
+  max-width: 380px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.modal-title { font-size: 22px; font-weight: 700; margin: 0; color: var(--text); }
+.modal-subtitle { color: var(--muted); margin: 0 0 6px; font-size: 15px; }
+.modal-footnote { color: var(--muted); font-size: 12px; text-align: center; margin: 6px 0 0; }
+
+/* v24: Add-to-Home-Screen hint banner. Sits below the topbar, above <main>.
+   Low visual weight so it doesn't compete with the core loop — just enough
+   for a non-tech friend to notice and act on it. Hidden once dismissed or
+   if already running standalone. */
+.a2hs-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(124, 77, 255, 0.12);
+  border-bottom: 1px solid rgba(124, 77, 255, 0.28);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.a2hs-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.a2hs-icon { font-size: 20px; flex-shrink: 0; }
+.a2hs-text { color: var(--text); }
+.a2hs-share-icon {
+  display: inline-block;
+  background: var(--accent-2);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 1px 4px;
+  vertical-align: middle;
+}
+.a2hs-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+}
+
+/* v38: loading skeleton — 3 ghost cards shown in #results during generation.
+   They telegraph the shape of the reply cards and reduce perceived wait time.
+   A subtle opacity pulse draws the eye without being distracting. */
+.result-card.skeleton {
+  pointer-events: none; /* non-interactive while loading */
+}
+.skeleton-line {
+  height: 14px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  margin-bottom: 10px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+/* Shorter second line — mimics the variable-length structure of a reply text. */
+.skeleton-line.short {
+  width: 60%;
+  margin-bottom: 0;
+}
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+/* Respect user preference for reduced motion — static muted blocks, no animation. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line { animation: none; opacity: 0.5; }
+}
+
+/* v39: "Read the room" strategic coach read card. Distinct from .result-card
+   (which holds reply options) via a left accent border + muted tint so it reads
+   as "analysis" not "a reply to copy". */
+.read-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-2);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+/* Each line of the read is a block so section labels + body flow naturally. */
+.read-line {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+/* Empty lines (between sections) get a little vertical breathing room. */
+.read-line:empty {
+  height: 0.6em;
+}
+/* Bold section labels (READ: / WORKING / STALLING: / NEXT MOVE:). */
+.read-label {
+  font-weight: 700;
+  color: var(--accent);
+}
+/* Loading state inside the read card. */
+.read-loading {
+  font-size: 14px;
+  color: var(--accent);
+}
+/* Error state inside the read card. */
+.read-error {
+  font-size: 14px;
+  color: var(--err);
+  white-space: pre-wrap;
+}
+/* v44: C10 — "Write replies with this in mind" CTA button inside the read card.
+   Full-width, dark palette, sits clearly below the read text. Reuses the
+   secondary-btn visual language but with the accent colour border to connect
+   it semantically to the read card's left-accent stripe. */
+.read-cta {
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1.5px solid var(--accent-2);
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 48px;
+}
+.read-cta:active { opacity: 0.75; }
+
+/* v43: voice preview card (C9). Distinct from .result-card (reply options) and
+   .read-card (strategic read) via a dashed border + muted tint — communicates
+   "sample / preview" rather than "real reply to send". */
+.preview-card {
+  background: var(--surface-2);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 8px;
+}
+/* Header line — mode label + "not for sending" qualifier. Muted, small. */
+.preview-head {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  font-style: italic;
+}
+/* Each sample opener. No Copy/Edit buttons — view-only. */
+.preview-sample {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  white-space: pre-wrap;
+}
+.preview-sample:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
